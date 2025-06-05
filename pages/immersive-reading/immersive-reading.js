@@ -577,7 +577,7 @@ Page({
   // 分享功能
   onShareAppMessage: function () {
     return {
-      title: '沉浸式英语点读 - 七七牌点读机',
+      title: '沉浸式英语点读 - 七七喵点读机',
       path: '/pages/immersive-reading/immersive-reading',
       imageUrl: '/images/share.png'
     }

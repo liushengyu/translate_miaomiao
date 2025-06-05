@@ -694,7 +694,7 @@ Page({
   // 分享功能
   onShareAppMessage: function () {
     return {
-      title: '七七牌点读机 - 智能英语点读助手',
+      title: '七七喵点读机 - 智能英语点读助手',
       path: '/pages/reading/reading',
       imageUrl: '/images/share.png'
     }

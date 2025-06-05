@@ -111,7 +111,7 @@ Page({
   // 分享功能
   onShareAppMessage: function () {
     return {
-      title: '七七牌点读机 - 智能英语学习助手',
+      title: '七七喵点读机 - 智能英语学习助手',
       path: '/pages/index/index',
       imageUrl: '/images/share.png'
     }
@@ -120,7 +120,7 @@ Page({
   // 分享到朋友圈
   onShareTimeline: function () {
     return {
-      title: '七七牌点读机 - 让英语学习更简单',
+      title: '七七喵点读机 - 让英语学习更简单',
       imageUrl: '/images/share.png'
     }
   }

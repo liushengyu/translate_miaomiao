@@ -1,4 +1,4 @@
-# 七七牌点读机 - WeChat Mini Program
+# 七七喵点读机 - WeChat Mini Program
 
 [![WeChat Mini Program](https://img.shields.io/badge/WeChat-Mini%20Program-green.svg)](https://developers.weixin.qq.com/miniprogram/dev/framework/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -7,7 +7,7 @@
 
 ## 📋 项目简介
 
-"七七牌点读机"是一款基于微信小程序平台的英语学习工具，旨在帮助用户随时随地进行英语学习。程序支持中英文互译、单词点读、语音练习等功能，为用户提供便捷的移动学习体验。
+"七七喵点读机"是一款基于微信小程序平台的英语学习工具，旨在帮助用户随时随地进行英语学习。程序支持中英文互译、单词点读、语音练习等功能，为用户提供便捷的移动学习体验。
 
 ## ✨ 功能特性
 

@@ -1,6 +1,6 @@
 App({
   onLaunch: function () {
-    console.log('七七牌点读机启动')
+    console.log('七七喵点读机启动')
 
     // 检查微信版本
     if (wx.canIUse('getUpdateManager')) {
