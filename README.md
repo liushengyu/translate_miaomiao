@@ -247,15 +247,14 @@ npm test
 如果您发现了bug或有功能建议，请通过以下方式反馈：
 
 - [GitHub Issues](https://github.com/yourusername/trans_everything/issues)
-- 微信群：扫描二维码加入开发者群
-- 邮箱：developer@example.com
+- 邮箱：244663057@qq.com
 
 ## 📞 联系我们
 
 - **开发团队**：七七开发团队
-- **项目主页**：https://github.com/yourusername/trans_everything
-- **技术支持**：support@example.com
-- **商务合作**：business@example.com
+- **项目主页**：https://github.com/liushengyu/trans_everything
+- **技术支持**：244663057@qq.com
+- **商务合作**：244663057@qq.com
 
 ## 🎉 致谢
 
