@@ -1,0 +1,142 @@
+<view class="container">
+  <!-- 输入区域 -->
+  <view class="card">
+    <view class="card-header">
+      <view class="title-row">
+        <text class="card-title">输入文本</text>
+        <view class="language-selector-mini">
+          <picker
+            mode="selector"
+            range="{{languageNames}}"
+            value="{{fromLanguageIndex}}"
+            bindchange="onFromLanguageChange"
+            class="language-picker"
+          >
+            <view class="language-btn-mini">
+              {{languageOptions[fromLanguage]}}
+            </view>
+          </picker>
+          <text class="arrow-icon">→</text>
+          <picker
+            mode="selector"
+            range="{{targetLanguageNames}}"
+            value="{{toLanguageIndex}}"
+            bindchange="onToLanguageChange"
+            class="language-picker"
+          >
+            <view class="language-btn-mini">
+              {{languageOptions[toLanguage]}}
+            </view>
+          </picker>
+        </view>
+      </view>
+      <view class="header-tools">
+        <text class="char-count">{{inputText.length}}/5000</text>
+        <button class="tool-btn" bindtap="manualTranslate" size="mini" disabled="{{!inputText || isTranslating}}" wx:if="{{!isTranslating}}">
+          ✨ 翻译
+        </button>
+        <button class="tool-btn" bindtap="speakOriginal" size="mini" disabled="{{!inputText || isPlaying}}" wx:if="{{!isPlaying}}">
+          🔊 朗读
+        </button>
+        <button class="tool-btn stop-btn" bindtap="stopPlaying" size="mini" wx:if="{{isPlaying}}">
+          ⏹ 停止
+        </button>
+      </view>
+    </view>
+    <textarea
+      class="textarea {{isTranslating ? 'textarea-translating' : ''}}"
+      placeholder="请输入要翻译的文本..."
+      value="{{inputText}}"
+      bindinput="onInputText"
+      maxlength="5000"
+      disabled="{{isTranslating}}"
+      auto-height
+    ></textarea>
+
+    <!-- 原文单词显示区域（用于选词） -->
+    <view wx:if="{{processedOriginalText && processedOriginalText.length > 0}}" class="original-words-container">
+      <text
+        wx:for="{{processedOriginalText}}"
+        wx:key="index"
+        class="original-word {{item.isSelected ? 'selected' : ''}}"
+        data-word="{{item.text}}"
+        data-index="{{index}}"
+        data-type="original"
+        bindtap="onWordTap"
+      >{{item.text}}</text>
+    </view>
+  </view>
+
+  <!-- 输出区域 -->
+  <view class="card">
+    <view class="card-header">
+      <text class="card-title">翻译结果</text>
+      <view class="header-tools">
+        <view class="language-info" wx:if="{{detectedLanguage && !isTranslating}}">
+          检测到: {{getLanguageName(detectedLanguage)}}
+        </view>
+        <button class="tool-btn" bindtap="speakResult" size="mini" disabled="{{!translatedText || isPlaying}}" wx:if="{{translatedText && !isTranslating && !isPlaying}}">
+          🔊 朗读
+        </button>
+        <button class="tool-btn stop-btn" bindtap="stopPlaying" size="mini" wx:if="{{translatedText && !isTranslating && isPlaying}}">
+          ⏹ 停止
+        </button>
+        <button class="tool-btn" bindtap="copyResult" size="mini" disabled="{{!translatedText}}" wx:if="{{translatedText && !isTranslating}}">
+          复制
+        </button>
+      </view>
+    </view>
+
+    <view class="output-area {{isTranslating ? 'translating' : ''}}">
+      <!-- 翻译中提示 -->
+      <view class="translating-tip" wx:if="{{isTranslating}}">
+        <text class="loading-icon">⟳</text>
+        <text>正在翻译中...</text>
+      </view>
+
+      <!-- 翻译结果 -->
+      <view wx:if="{{translatedText && !isTranslating}}" class="translated-content">
+        <!-- 使用双击选词的翻译结果显示 -->
+        <view class="result-text-container">
+          <text
+            wx:for="{{processedTranslatedText}}"
+            wx:key="index"
+            class="translated-word {{item.isSelected ? 'selected' : ''}}"
+            data-word="{{item.text}}"
+            data-index="{{index}}"
+            data-type="translation"
+            bindtap="onWordTap"
+          >{{item.text}}</text>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view wx:if="{{!translatedText && !isTranslating}}" class="empty-state">
+        <text>翻译结果将在这里显示</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 选择菜单 -->
+<view class="selection-menu-overlay" wx:if="{{showSelectionMenu}}" bindtap="exitSelectionMode">
+  <view class="selection-menu" catchtap="">
+    <view class="menu-header">
+      <text class="selected-info">已选择 {{selectedWordCount}} 个词</text>
+    </view>
+    <view class="menu-actions">
+      <button class="menu-btn play-btn" bindtap="speakSelectedText">
+        <text class="btn-icon">🔊</text>
+        <text class="btn-text">朗读</text>
+      </button>
+      <button class="menu-btn copy-btn" bindtap="copySelectedText">
+        <text class="btn-icon">📋</text>
+        <text class="btn-text">复制</text>
+      </button>
+      <button class="menu-btn exit-btn" bindtap="exitSelectionMode">
+        <text class="btn-icon">❌</text>
+        <text class="btn-text">取消</text>
+      </button>
+    </view>
+  </view>
+</view>

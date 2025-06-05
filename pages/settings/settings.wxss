@@ -1,0 +1,245 @@
+.settings-container {
+  padding: 12px;
+  background-color: var(--background-secondary);
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 20px 0;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  border-radius: var(--border-radius-lg);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* 设置区域 */
+.settings-section {
+  background: var(--background-primary);
+  border-radius: var(--border-radius-md);
+  margin-bottom: 16px;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-primary);
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 设置项 */
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  font-size: 15px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+/* 选择器 */
+.picker-display {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  min-width: 100px;
+  text-align: center;
+}
+
+/* 滑块容器 */
+.slider-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  margin-left: 12px;
+}
+
+.slider-value {
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-full);
+  font-size: 12px;
+  margin-right: 12px;
+  min-width: 30px;
+  text-align: center;
+}
+
+slider {
+  flex: 1;
+}
+
+/* 测试区域 */
+.test-area {
+  padding: 16px;
+}
+
+.test-input {
+  width: 100%;
+  min-height: 100px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.test-button {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-full);
+  padding: 12px 20px;
+  font-size: 15px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.test-button-text {
+  font-size: 15px;
+}
+
+/* API设置 */
+.api-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.api-item:last-child {
+  border-bottom: none;
+}
+
+.api-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.api-name {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.api-inputs {
+  padding: 0 16px 16px;
+}
+
+.api-input {
+  width: 100%;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.api-input:last-child {
+  margin-bottom: 0;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.action-button {
+  border: none;
+  border-radius: var(--border-radius-full);
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.save-button {
+  background: linear-gradient(135deg, var(--success-color) 0%, var(--success-dark) 100%);
+  color: white;
+}
+
+.status-button {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+/* 开关按钮 */
+switch {
+  transform: scale(0.8);
+}
+
+/* 额外样式 */
+.version-info {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 16px 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .settings-container {
+    padding: 8px;
+  }
+
+  .page-header {
+    padding: 16px 0;
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .settings-section {
+    margin-bottom: 12px;
+  }
+
+  .setting-item {
+    padding: 12px;
+  }
+}

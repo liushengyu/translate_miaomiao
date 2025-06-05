@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "沉浸式点读",
+  "navigationBarBackgroundColor": "#4A90E2",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#f5f7fa",
+  "backgroundTextStyle": "dark",
+  "enablePullDownRefresh": false,
+  "onReachBottomDistance": 50,
+  "disableScroll": false
+}

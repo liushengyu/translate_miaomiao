@@ -1,0 +1,254 @@
+<view class="container">
+  <!-- 服务状态提示 -->
+  <view class="status-tip" wx:if="{{serviceStatus.isLoaded && !serviceStatus.speechAvailable}}">
+    <text class="status-text">⚠️ 当前使用模拟语音服务，请参考文档配置真实API</text>
+  </view>
+
+  <!-- 文本输入区域 -->
+  <view class="text-input-section card">
+    <view class="input-header">
+      <text class="input-title">输入英文文本进行点读</text>
+    </view>
+    <textarea
+      class="reading-textarea"
+      placeholder="请输入英文文本，点击单词或句子进行朗读..."
+      value="{{inputText}}"
+      bindinput="onTextChange"
+      maxlength="2000"
+      auto-height
+    ></textarea>
+    <view class="input-footer">
+      <text class="char-count">{{inputText.length}}/2000</text>
+      <view class="button-group">
+        <button
+          class="process-btn btn-primary"
+          bindtap="processText"
+          disabled="{{!inputText || isPlaying}}"
+        >
+          处理文本
+        </button>
+
+
+      </view>
+    </view>
+  </view>
+
+  <!-- 阅读文本区域 -->
+  <view class="reading-section" wx:if="{{processedWords.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">处理结果</text>
+
+      <view class="reading-controls">
+        <button class="control-btn stop-btn"
+                bindtap="stopReading"
+                wx:if="{{isPlaying || isPlayingAll}}">
+          🛑 停止朗读
+        </button>
+      </view>
+    </view>
+
+    <!-- 文本展示区域 - 类似翻译页面的结果区域 -->
+    <view class="output-area">
+      <!-- 如果正在播放全部，显示播放状态 -->
+      <view class="translating-tip" wx:if="{{isPlayingAll}}">
+        <text class="loading-icon">🔊</text>
+        <text>正在朗读中...</text>
+      </view>
+
+      <!-- 处理后的文本内容 -->
+      <view wx:if="{{processedWords.length > 0 && !isPlayingAll}}" class="reading-content">
+        <!-- 使用可选择的单词元素显示文本 -->
+        <view class="result-text-container">
+          <text
+            wx:for="{{processedWords}}"
+            wx:key="index"
+            class="result-word {{item.isSelected ? 'selected' : ''}} {{item.isPlaying ? 'playing' : ''}}"
+            data-index="{{index}}"
+            data-word="{{item.text}}"
+            bindtap="onWordTap"
+          >{{item.text}}</text>
+        </view>
+
+        <!-- 播放状态指示 -->
+        <view class="play-status" wx:if="{{currentPlayingWord}}">
+          <text>正在播放: {{currentPlayingWord}}</text>
+          <view class="play-progress">
+            <view class="progress-bar" style="width: {{playProgress}}%"></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view wx:if="{{processedWords.length === 0}}" class="empty-state">
+        <text>处理后的文本将在这里显示</text>
+      </view>
+    </view>
+
+    <!-- 选择状态提示 -->
+    <view class="selection-indicator" wx:if="{{isSelecting}}">
+      <text class="selection-hint">滑动选择文本...</text>
+    </view>
+  </view>
+
+  <!-- 选择操作菜单 - 使用与沉浸式阅读相同的样式 -->
+  <view class="selection-menu-overlay" wx:if="{{showSelectionMenu && selectedText}}" bindtap="exitSelectionMode">
+    <view class="selection-menu"
+          style="left: {{menuPosition.x || 50}}px; top: {{menuPosition.y || 100}}px;"
+          catchtap="">
+      <view class="menu-content">
+        <text class="selected-preview">{{selectedText.length > 30 ? selectedText.substring(0, 30) + '...' : selectedText}}</text>
+
+        <view class="menu-actions">
+          <button class="menu-btn play-btn" bindtap="speakSelectedText">
+            <text class="icon">🔊</text>
+            <text>播放</text>
+          </button>
+
+          <button class="menu-btn translate-btn" bindtap="translateSelectedText">
+            <text class="icon">🌐</text>
+            <text>翻译</text>
+          </button>
+
+          <button class="menu-btn copy-btn" bindtap="copySelectedText">
+            <text class="icon">📋</text>
+            <text>复制</text>
+          </button>
+        </view>
+
+        <button class="menu-close" bindtap="exitSelectionMode">
+          <text>✕</text>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 语音设置 -->
+  <view class="voice-settings card">
+    <view class="settings-header">
+      <text class="settings-title">语音设置</text>
+    </view>
+    <view class="settings-content">
+      <view class="setting-item">
+        <text class="setting-label">语音速度</text>
+        <slider
+          class="setting-slider"
+          min="0.5"
+          max="2"
+          step="0.1"
+          value="{{voiceSettings.speed}}"
+          bindchange="onSpeedChange"
+          show-value
+        />
+      </view>
+      <view class="setting-item">
+        <text class="setting-label">音量大小</text>
+        <slider
+          class="setting-slider"
+          min="0"
+          max="1"
+          step="0.1"
+          value="{{voiceSettings.volume}}"
+          bindchange="onVolumeChange"
+          show-value
+        />
+      </view>
+      <view class="setting-item">
+        <text class="setting-label">语音音调</text>
+        <slider
+          class="setting-slider"
+          min="0.5"
+          max="2"
+          step="0.1"
+          value="{{voiceSettings.pitch}}"
+          bindchange="onPitchChange"
+          show-value
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 示例文本 -->
+  <view class="examples-section card">
+    <view class="examples-header">
+      <text class="examples-title">示例文本</text>
+    </view>
+    <view class="examples-content">
+      <button
+        class="example-btn"
+        wx:for="{{exampleTexts}}"
+        wx:key="index"
+        bindtap="loadExample"
+        data-text="{{item}}"
+      >
+        {{item}}
+      </button>
+    </view>
+  </view>
+
+  <!-- 学习统计 -->
+  <view class="stats-section card">
+    <view class="stats-header">
+      <text class="stats-title">今日学习统计</text>
+    </view>
+    <view class="stats-grid">
+      <view class="stat-card">
+        <text class="stat-number">{{todayStats.wordsRead}}</text>
+        <text class="stat-label">朗读单词</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{todayStats.sentencesRead}}</text>
+        <text class="stat-label">朗读句子</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-number">{{todayStats.timeSpent}}</text>
+        <text class="stat-label">学习时长(分)</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 收藏的单词 -->
+  <view class="favorites-section card" wx:if="{{favoriteWords.length > 0}}">
+    <view class="favorites-header">
+      <text class="favorites-title">收藏的单词</text>
+      <button class="tool-btn" bindtap="clearFavorites" size="mini">清空</button>
+    </view>
+    <view class="favorites-content">
+      <view
+        class="favorite-word"
+        wx:for="{{favoriteWords}}"
+        wx:key="index"
+        bindtap="speakFavorite"
+        data-word="{{item}}"
+      >
+        <text class="word-text">{{item}}</text>
+        <button
+          class="remove-btn"
+          bindtap="removeFavorite"
+          data-word="{{item}}"
+          catchtap=""
+        >×</button>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 单词详情模态框 -->
+<view class="modal-overlay" wx:if="{{showWordModal}}" bindtap="closeWordModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-header">
+      <text class="modal-title">单词详情</text>
+      <button class="modal-close" bindtap="closeWordModal">×</button>
+    </view>
+    <view class="modal-body">
+      <view class="word-detail">
+        <text class="detail-word">{{selectedWordDetail.word}}</text>
+        <text class="detail-phonetic">{{selectedWordDetail.phonetic}}</text>
+        <text class="detail-meaning">{{selectedWordDetail.meaning}}</text>
+        <view class="detail-actions">
+          <button class="btn-primary" bindtap="speakDetailWord" disabled="{{isPlaying}}">🔊 朗读</button>
+          <button class="btn-secondary" bindtap="addToFavorites">⭐ 收藏</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

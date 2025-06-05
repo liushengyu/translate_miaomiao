@@ -1,0 +1,346 @@
+/**app.wxss**/
+/* 设计系统变量定义 */
+page {
+  --primary-color: #1E88E5;
+  --primary-dark: #1565C0;
+  --primary-light: #B3D9FF;
+  --secondary-color: #34C759;
+  --secondary-light: #B8F5C3;
+  --warning-color: #FF9500;
+  --warning-light: #FFD6A8;
+  --warning-dark: #CC7700;
+  --danger-color: #FF3B30;
+  --danger-dark: #CC2E26;
+  --danger-light: #FFB3AE;
+  --success-color: #34C759;
+  --success-light: #B8F5C3;
+  --success-dark: #2CA650;
+  --text-primary: #1D1D1F;
+  --text-secondary: #8E8E93;
+  --text-tertiary: #C7C7CC;
+  --background-primary: #FFFFFF;
+  --background-secondary: #F2F2F7;
+  --background-tertiary: #F9F9F9;
+  --border-color: #E5E5EA;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-full: 9999px;
+
+  /* 全局字体设置 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', SimSun, sans-serif;
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+/* 通用容器 */
+.container {
+  padding: 16px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* 卡片样式 */
+.card {
+  background: var(--background-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--background-primary);
+  box-sizing: border-box;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-content {
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* 按钮系统 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: var(--border-radius-md);
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:active {
+  background: var(--primary-dark);
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:active {
+  background: var(--border-color);
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  color: white;
+}
+
+.btn-danger:active {
+  background: var(--danger-dark);
+}
+
+.btn-small {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-height: 32px;
+}
+
+.btn-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* 工具按钮统一样式 */
+.tool-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 14px;
+  padding: 8px 12px;
+  min-width: 60px;
+  height: 32px;
+  line-height: 16px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.tool-btn[disabled] {
+  background: var(--text-tertiary);
+  color: var(--text-secondary);
+}
+
+.tool-btn:not([disabled]):active {
+  background: var(--primary-dark);
+  transform: scale(0.95);
+}
+
+/* 停止按钮特殊样式 */
+.stop-btn {
+  background: var(--danger-color) !important;
+  animation: pulse 1.5s infinite;
+}
+
+.stop-btn:not([disabled]):active {
+  background: var(--danger-dark) !important;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* 输入框样式 */
+.input-field, .textarea {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 12px;
+  font-size: 16px;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.input-field:focus, .textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+/* 文本选择相关样式 */
+.selectable-text {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.word, .result-word {
+  display: inline;
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.word.selected, .result-word.selected {
+  background: var(--primary-color);
+  color: white;
+  border-radius: 2px;
+}
+
+.word:hover, .result-word:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+/* 选择菜单统一样式 */
+.selection-menu-overlay, .text-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.selection-menu, .text-menu {
+  position: absolute;
+  background: var(--background-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  min-width: 120px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: left;
+  width: 100%;
+  transition: background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.menu-item:active {
+  background: var(--background-secondary);
+}
+
+.menu-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.menu-text {
+  flex: 1;
+}
+
+/* 文本颜色类 */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-success { color: var(--secondary-color); }
+.text-warning { color: var(--warning-color); }
+.text-danger { color: var(--danger-color); }
+
+/* 布局类 */
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.flex-column { display: flex; flex-direction: column; }
+
+/* 间距类 */
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+.ml-10 { margin-left: 10px; }
+.mr-10 { margin-right: 10px; }
+
+/* 标题类 */
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: var(--text-secondary);
+}
+
+.loading-icon {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+
+  .card-header {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

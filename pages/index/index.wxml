@@ -1,0 +1,83 @@
+<view class="container">
+  <!-- 欢迎横幅 -->
+  <view class="welcome-banner">
+    <view class="banner-content">
+      <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+      <view class="welcome-text">
+        <text class="title">七七喵点读机</text>
+        <text class="subtitle">智能英语翻译与点读助手</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能卡片 -->
+  <view class="features">
+    <view class="feature-card" bindtap="goToTranslate">
+      <view class="feature-icon">
+        <image src="/images/translate-icon.png" mode="aspectFit"></image>
+      </view>
+      <view class="feature-content">
+        <text class="feature-title">智能翻译</text>
+        <text class="feature-desc">英文秒速翻译中文</text>
+      </view>
+      <view class="feature-arrow">›</view>
+    </view>
+
+    <view class="feature-card" bindtap="goToReading">
+      <view class="feature-icon">
+        <image src="/images/reading-icon.png" mode="aspectFit"></image>
+      </view>
+      <view class="feature-content">
+        <text class="feature-title">语音点读</text>
+        <text class="feature-desc">点击单词听发音</text>
+      </view>
+      <view class="feature-arrow">›</view>
+    </view>
+  </view>
+
+  <!-- 今日使用统计 -->
+  <view class="stats-card card">
+    <view class="stats-header">
+      <text class="stats-title">今日使用统计</text>
+    </view>
+    <view class="stats-content">
+      <view class="stat-item">
+        <text class="stat-number">{{translateCount}}</text>
+        <text class="stat-label">翻译次数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{readingCount}}</text>
+        <text class="stat-label">点读次数</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{learnedWords}}</text>
+        <text class="stat-label">学习单词</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 最近翻译历史 -->
+  <view class="history-card card" wx:if="{{recentTranslations.length > 0}}">
+    <view class="history-header flex-between">
+      <text class="history-title">最近翻译</text>
+      <text class="view-all" bindtap="viewAllHistory">查看全部</text>
+    </view>
+    <view class="history-list">
+      <view class="history-item" wx:for="{{recentTranslations}}" wx:key="index">
+        <view class="history-original">{{item.original}}</view>
+        <view class="history-translated">{{item.translated}}</view>
+        <view class="history-time">{{item.time}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 学习小贴士 -->
+  <view class="tips-card card">
+    <view class="tips-header">
+      <text class="tips-title">💡 学习小贴士</text>
+    </view>
+    <view class="tips-content">
+      <text class="tips-text">{{dailyTip}}</text>
+    </view>
+  </view>
+</view>

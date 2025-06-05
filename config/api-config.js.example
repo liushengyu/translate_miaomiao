@@ -1,0 +1,123 @@
+// API配置示例文件
+// 复制此文件为 api-config.js 并填入真实的API密钥
+
+const config = {
+  // 开发环境是否使用模拟服务（生产环境请设为false）
+  useMock: true, // 设为false启用真实API服务
+
+  // 百度翻译API配置
+  // 申请地址：https://fanyi-api.baidu.com/
+  baidu: {
+    translate: {
+      appid: 'YOUR_BAIDU_TRANSLATE_APPID',     // 替换为您的百度翻译APPID
+      key: 'YOUR_BAIDU_TRANSLATE_KEY'         // 替换为您的百度翻译密钥
+    },
+    speech: {
+      appId: 'YOUR_BAIDU_SPEECH_APPID',       // 百度语音APPID
+      apiKey: 'YOUR_BAIDU_SPEECH_APIKEY',     // 百度语音API Key
+      secretKey: 'YOUR_BAIDU_SPEECH_SECRETKEY' // 百度语音Secret Key
+    }
+  },
+
+  // 腾讯云翻译API配置
+  // 申请地址：https://cloud.tencent.com/product/tmt
+  tencent: {
+    translate: {
+      secretId: 'YOUR_TENCENT_SECRET_ID',     // 腾讯云SecretId
+      secretKey: 'YOUR_TENCENT_SECRET_KEY',   // 腾讯云SecretKey
+      region: 'ap-beijing'                    // 地域，如：ap-beijing, ap-shanghai
+    }
+  },
+
+  // 科大讯飞语音API配置
+  // 申请地址：https://www.xfyun.cn/
+  iflytek: {
+    speech: {
+      appId: 'YOUR_IFLYTEK_APPID',           // 讯飞应用ID
+      apiSecret: 'YOUR_IFLYTEK_API_SECRET',   // 讯飞API Secret
+      apiKey: 'YOUR_IFLYTEK_API_KEY'         // 讯飞API Key
+    }
+  },
+
+  // 有道翻译API配置
+  // 申请地址：https://ai.youdao.com/
+  youdao: {
+    translate: {
+      appKey: 'YOUR_YOUDAO_APP_KEY',         // 有道应用Key
+      appSecret: 'YOUR_YOUDAO_APP_SECRET'    // 有道应用Secret
+    }
+  },
+
+  // 阿里云语音服务配置
+  // 申请地址：https://nls.console.aliyun.com/
+  alibaba: {
+    speech: {
+      accessKeyId: 'YOUR_ALIBABA_ACCESS_KEY_ID',       // 阿里云AccessKey ID
+      accessKeySecret: 'YOUR_ALIBABA_ACCESS_KEY_SECRET', // 阿里云AccessKey Secret
+      appKey: 'YOUR_ALIBABA_SPEECH_APP_KEY'            // 智能语音交互AppKey
+    }
+  }
+}
+
+/**
+ * 根据环境返回配置
+ * @returns {Object} 配置对象
+ */
+function getConfig() {
+  // 生产环境可以从环境变量中读取配置
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'production') {
+    return {
+      useMock: false,
+      baidu: {
+        translate: {
+          appid: process.env.BAIDU_TRANSLATE_APPID,
+          key: process.env.BAIDU_TRANSLATE_KEY
+        }
+      },
+      tencent: {
+        translate: {
+          secretId: process.env.TENCENT_SECRET_ID,
+          secretKey: process.env.TENCENT_SECRET_KEY,
+          region: process.env.TENCENT_REGION || 'ap-beijing'
+        }
+      },
+      iflytek: {
+        speech: {
+          appId: process.env.IFLYTEK_APPID,
+          apiSecret: process.env.IFLYTEK_API_SECRET,
+          apiKey: process.env.IFLYTEK_API_KEY
+        }
+      }
+    }
+  }
+
+  // 开发环境返回配置文件中的设置
+  return config
+}
+
+module.exports = {
+  config,
+  getConfig
+}
+
+/**
+ * 配置说明：
+ *
+ * 1. 将此文件复制为 api-config.js
+ * 2. 将所有 YOUR_* 占位符替换为真实的API密钥
+ * 3. 设置 useMock 为 false 启用真实API服务
+ * 4. 根据需要启用相应的服务配置
+ *
+ * 安全提示：
+ * - 不要将包含真实API密钥的配置文件提交到代码仓库
+ * - 生产环境建议使用环境变量存储敏感信息
+ * - 定期更换API密钥以确保安全
+ *
+ * 免费额度参考（截至2024年）：
+ * - 百度翻译：200万字符/月
+ * - 腾讯翻译：500万字符/月
+ * - 讯飞语音：500次/日
+ * - 有道翻译：100万字符/月
+ *
+ * 注意：免费额度可能会变化，请以官方最新政策为准
+ */

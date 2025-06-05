@@ -1,0 +1,158 @@
+<!--pages/immersive-reading/immersive-reading.wxml-->
+<view class="container theme-{{theme}}">
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="nav-left">
+      <button class="nav-btn" bindtap="goBack">
+        <text class="icon">←</text>
+        <text>返回</text>
+      </button>
+    </view>
+
+    <view class="nav-center">
+      <text class="nav-title">沉浸式点读</text>
+    </view>
+
+    <view class="nav-right">
+      <view class="theme-switcher">
+        <button class="theme-btn {{theme === 'light' ? 'active' : ''}}"
+                data-theme="light" bindtap="switchTheme">🌞</button>
+        <button class="theme-btn {{theme === 'sepia' ? 'active' : ''}}"
+                data-theme="sepia" bindtap="switchTheme">📜</button>
+        <button class="theme-btn {{theme === 'dark' ? 'active' : ''}}"
+                data-theme="dark" bindtap="switchTheme">🌙</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 控制面板 -->
+  <view class="control-panel">
+    <!-- 播放控制 -->
+    <view class="play-controls">
+      <button class="control-btn play-all-btn"
+              bindtap="playAll"
+              disabled="{{isPlayingAll || processedWords.length === 0}}">
+        <text class="icon">▶️</text>
+        <text>全文播放</text>
+      </button>
+
+      <button class="control-btn stop-btn"
+              bindtap="stopPlaying"
+              wx:if="{{isPlaying || isPlayingAll}}">
+        <text class="icon">🛑</text>
+        <text>停止播放</text>
+      </button>
+    </view>
+
+    <!-- 选择模式控制 -->
+    <view class="selection-controls">
+      <button class="control-btn selection-btn {{selectionMode ? 'active' : ''}}"
+              bindtap="{{selectionMode ? 'exitSelectionMode' : 'enterSelectionMode'}}">
+        <text class="icon">{{selectionMode ? '✕' : '✓'}}</text>
+        <text>{{selectionMode ? '退出选择' : '选择模式'}}</text>
+      </button>
+
+      <view class="selected-info" wx:if="{{selectionMode && selectedText}}">
+        <text>已选择: {{selectedText.length > 20 ? selectedText.substring(0, 20) + '...' : selectedText}}</text>
+      </view>
+    </view>
+
+    <!-- 字体控制 -->
+    <view class="font-controls">
+      <button class="font-btn" data-type="decrease" bindtap="adjustFontSize">A-</button>
+      <text class="font-size-display">{{fontSize}}px</text>
+      <button class="font-btn" data-type="increase" bindtap="adjustFontSize">A+</button>
+
+      <button class="font-btn" data-type="decrease" bindtap="adjustLineHeight">行高-</button>
+      <text class="line-height-display">{{lineHeight}}</text>
+      <button class="font-btn" data-type="increase" bindtap="adjustLineHeight">行高+</button>
+    </view>
+  </view>
+
+  <!-- 文本显示区域 -->
+  <view class="reading-area" style="font-size: {{fontSize}}px; line-height: {{lineHeight}};">
+    <view class="text-container"
+          wx:if="{{processedWords.length > 0}}"
+          bindtouchstart="onTouchStart"
+          bindtouchmove="onTouchMove"
+          bindtouchend="onTouchEnd"
+          style="user-select: none; -webkit-user-select: none;">
+      <text
+        wx:for="{{processedWords}}"
+        wx:key="index"
+        class="word {{item.isSelected ? 'selected' : ''}} {{item.isPlaying ? 'playing' : ''}} {{theme}}"
+        data-index="{{index}}"
+        style="pointer-events: none;"
+      >{{item.text}}</text>
+    </view>
+
+    <!-- 播放进度指示器 -->
+    <view class="play-indicator" wx:if="{{isPlaying && currentPlayingWord}}">
+      <text class="current-word">正在播放: {{currentPlayingWord}}</text>
+    </view>
+
+    <!-- 选择状态提示 -->
+    <view class="selection-indicator" wx:if="{{isSelecting}}">
+      <text class="selection-hint">滑动选择文本...</text>
+    </view>
+
+    <!-- 空状态提示 -->
+    <view class="empty-state" wx:if="{{processedWords.length === 0}}">
+      <text class="empty-icon">📖</text>
+      <text class="empty-text">没有文本内容</text>
+      <text class="empty-hint">请从阅读页面跳转过来，或者等待加载示例内容</text>
+    </view>
+  </view>
+
+  <!-- 选择操作菜单 -->
+  <view class="selection-menu-overlay" wx:if="{{showSelectionMenu && selectedText}}" bindtap="hideSelectionMenu">
+    <view class="selection-menu"
+          style="left: {{menuPosition.x || 50}}px; top: {{menuPosition.y || 100}}px;"
+          catchtap="">
+      <view class="menu-content">
+        <text class="selected-preview">{{selectedText.length > 30 ? selectedText.substring(0, 30) + '...' : selectedText}}</text>
+
+        <view class="menu-actions">
+          <button class="menu-btn play-btn" bindtap="playSelectedText">
+            <text class="icon">🔊</text>
+            <text>播放</text>
+          </button>
+
+          <button class="menu-btn translate-btn" bindtap="translateSelectedText">
+            <text class="icon">🌐</text>
+            <text>翻译</text>
+          </button>
+
+          <button class="menu-btn copy-btn" bindtap="copySelectedText">
+            <text class="icon">📋</text>
+            <text>复制</text>
+          </button>
+        </view>
+
+        <button class="menu-close" bindtap="hideSelectionMenu">
+          <text>✕</text>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部状态栏 -->
+  <view class="status-bar">
+    <view class="status-item">
+      <text class="status-label">单词数:</text>
+      <text class="status-value">{{processedWords.length}}</text>
+    </view>
+
+    <view class="status-item" wx:if="{{selectedIndexes.length > 0}}">
+      <text class="status-label">已选择:</text>
+      <text class="status-value">{{selectedIndexes.length}}</text>
+    </view>
+
+    <view class="status-item">
+      <text class="status-label">语音:</text>
+      <text class="status-value {{serviceStatus.speechAvailable ? 'available' : 'unavailable'}}">
+        {{serviceStatus.speechAvailable ? '可用' : '不可用'}}
+      </text>
+    </view>
+  </view>
+</view>

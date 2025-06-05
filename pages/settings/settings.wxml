@@ -1,0 +1,100 @@
+<view class="settings-container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">语音设置</text>
+    <text class="page-subtitle">调整语音播放参数</text>
+  </view>
+
+  <!-- 语音设置区域 -->
+  <view class="settings-section">
+    <view class="section-title">语音参数</view>
+
+    <!-- 语言选择 -->
+    <view class="setting-item">
+      <text class="setting-label">测试语言</text>
+      <picker mode="selector" range="{{languages}}" range-key="name" value="{{selectedLanguage}}" bindchange="onLanguageChange">
+        <view class="picker-display">
+          {{selectedLanguage === 'zh' ? '中文' : '英文'}} ▼
+        </view>
+      </picker>
+    </view>
+
+    <!-- 发音人选择 -->
+    <view class="setting-item">
+      <text class="setting-label">发音人</text>
+      <picker mode="selector" range="{{persons}}" range-key="name" value="{{voiceSettings.person}}" bindchange="onPersonChange">
+        <view class="picker-display">
+          {{persons[voiceSettings.person].name}} ▼
+        </view>
+      </picker>
+    </view>
+
+    <!-- 语音速度 -->
+    <view class="setting-item">
+      <text class="setting-label">语音速度</text>
+      <view class="slider-container">
+        <text class="slider-value">{{voiceSettings.speed}}</text>
+        <slider min="1" max="9" value="{{voiceSettings.speed}}" bindchange="onSpeedChange" show-value="false" activeColor="#1890ff"/>
+      </view>
+    </view>
+
+    <!-- 语音音调 -->
+    <view class="setting-item">
+      <text class="setting-label">语音音调</text>
+      <view class="slider-container">
+        <text class="slider-value">{{voiceSettings.pitch}}</text>
+        <slider min="1" max="9" value="{{voiceSettings.pitch}}" bindchange="onPitchChange" show-value="false" activeColor="#1890ff"/>
+      </view>
+    </view>
+
+    <!-- 语音音量 -->
+    <view class="setting-item">
+      <text class="setting-label">语音音量</text>
+      <view class="slider-container">
+        <text class="slider-value">{{voiceSettings.volume}}</text>
+        <slider min="1" max="15" value="{{voiceSettings.volume}}" bindchange="onVolumeChange" show-value="false" activeColor="#1890ff"/>
+      </view>
+    </view>
+  </view>
+
+  <!-- 语音测试区域 -->
+  <view class="settings-section">
+    <view class="section-title">语音测试</view>
+
+    <view class="test-area">
+      <textarea
+        class="test-input"
+        placeholder="输入测试文本..."
+        value="{{testText}}"
+        bindchange="onTestTextChange"
+        maxlength="200">
+      </textarea>
+
+      <button class="test-button" bindtap="testVoice">
+        <text class="test-button-text">🔊 测试语音</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 操作按钮区域 -->
+  <view class="action-buttons">
+    <button class="action-button status-button" bindtap="checkServiceStatus">
+      检查服务状态
+    </button>
+
+    <button class="action-button reset-button" bindtap="resetSettings">
+      重置设置
+    </button>
+  </view>
+
+  <!-- 使用说明 -->
+  <view class="settings-section">
+    <view class="section-title">使用说明</view>
+    <view class="help-text">
+      <text>• 语音速度：1-9，数值越大语速越快</text>
+      <text>• 语音音调：1-9，数值越大音调越高</text>
+      <text>• 语音音量：1-15，数值越大音量越大</text>
+      <text>• 修改设置后建议先测试语音效果</text>
+    </view>
+  </view>
+</view>
