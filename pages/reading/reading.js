@@ -1,176 +1,162 @@
-const app = getApp()
-const serviceManager = require('../../utils/service-manager.js')
+// pages/reading/reading.js
+const serviceManager = require('../../utils/service-manager')
 
 Page({
   data: {
     inputText: '',
     processedWords: [],
-    currentWord: '',
-    currentIndex: -1,
-    isPlaying: false,
-    showWordModal: false,
-    selectedWordDetail: {},
-    serviceStatus: {
-      isLoaded: false,
-      speechAvailable: false
-    },
+    isProcessing: false,
     voiceSettings: {
-      speed: 1.0,
-      volume: 1.0,
-      pitch: 1.0
+      rate: 1.0,
+      pitch: 1.0,
+      volume: 1.0
     },
+    statistics: {
+      totalWords: 0,
+      studiedWords: 0,
+      studyTime: 0
+    },
+    // 今日学习统计
     todayStats: {
       wordsRead: 0,
       sentencesRead: 0,
       timeSpent: 0
     },
+    // 收藏的单词
     favoriteWords: [],
-    exampleTexts: [
-      'Hello, welcome to our English learning app!',
-      'The quick brown fox jumps over the lazy dog.',
-      'Education is the most powerful weapon which you can use to change the world.',
-      'Life is what happens when you\'re busy making other plans.',
-      'The only way to do great work is to love what you do.',
-      'In the middle of difficulty lies opportunity.'
-    ],
+    // 服务状态
+    serviceStatus: {
+      isLoaded: true,
+      speechAvailable: true
+    },
+    // 单词详情模态框
+    showWordModal: false,
+    selectedWordDetail: {
+      word: '',
+      phonetic: '',
+      meaning: ''
+    },
+    showTranslationBubble: false,
+    bubbleContent: {
+      word: '',
+      translation: '',
+      position: { x: 0, y: 0 }
+    },
+    translationCache: {},
+    isPlayingAll: false,
+    isPlaying: false,
     currentPlayingIndex: -1,
-    playingSequence: false,
-    sequenceController: null,
     currentPlayingWord: '',
-    playProgress: 0,
-    // 文本选择相关变量 - 改为双击模式
-    isSelectingMode: false, // 是否处于选择模式
-    selectionStartIndex: -1, // 选择起始索引
-    selectionEndIndex: -1,   // 选择结束索引
-    selectedText: '',
+    playingSequence: false,
+
+    // 选择相关状态
+    isSelectingMode: false,
+    selectionStartIndex: -1,
+    selectionEndIndex: -1,
     showSelectionMenu: false,
-    menuPosition: { x: 0, y: 0 },
-    // 移除原有的触摸相关变量
-    isPlayingAll: false
+    selectedText: '',
+    selectionMenuPosition: { x: 0, y: 0 },
+    isSelecting: false,
+    selectedRange: { start: -1, end: -1 }
   },
 
-  onLoad: function (options) {
+  onLoad: function() {
     this.loadUserData()
-    this.loadTodayStats()
-    this.checkServiceStatus()
+    this.loadStatistics()
   },
 
-  onShow: function () {
-    this.loadTodayStats()
-    this.checkServiceStatus()
+  onShow: function() {
+    this.loadUserData()
   },
 
   // 加载用户数据
   loadUserData: function() {
     try {
-      const favorites = wx.getStorageSync('favoriteWords') || []
-      const settings = wx.getStorageSync('voiceSettings') || {
-        speed: 1.0,
-        volume: 1.0,
-        pitch: 1.0
+      const voiceSettings = wx.getStorageSync('voiceSettings')
+      if (voiceSettings) {
+        this.setData({
+          voiceSettings: voiceSettings
+        })
       }
 
+      // 加载收藏的单词
+      const favoriteWords = wx.getStorageSync('favoriteWords') || []
       this.setData({
-        favoriteWords: favorites,
-        voiceSettings: settings
+        favoriteWords: favoriteWords
       })
-    } catch (e) {
-      console.log('加载用户数据失败:', e)
+
+      // 加载今日统计
+      const today = new Date().toDateString()
+      const todayStatsKey = `todayStats_${today}`
+      const todayStats = wx.getStorageSync(todayStatsKey) || {
+        wordsRead: 0,
+        sentencesRead: 0,
+        timeSpent: 0
+      }
+      this.setData({
+        todayStats: todayStats
+      })
+
+    } catch (error) {
+      console.error('加载用户数据失败:', error)
     }
   },
 
-  // 加载今日统计
-  loadTodayStats: function() {
+  // 加载学习统计
+  loadStatistics: function() {
     try {
-      const today = new Date().toDateString()
-      const stats = wx.getStorageSync('readingStats') || {}
-
-      if (stats.date === today) {
+      const statistics = wx.getStorageSync('statistics')
+      if (statistics) {
         this.setData({
-          todayStats: {
-            wordsRead: stats.wordsRead || 0,
-            sentencesRead: stats.sentencesRead || 0,
-            timeSpent: stats.timeSpent || 0
-          }
-        })
-      } else {
-        this.setData({
-          todayStats: {
-            wordsRead: 0,
-            sentencesRead: 0,
-            timeSpent: 0
-          }
+          statistics: statistics
         })
       }
-    } catch (e) {
-      console.log('加载统计数据失败:', e)
+    } catch (error) {
+      console.error('加载统计数据失败:', error)
     }
   },
 
-  // 保存统计数据
-  saveStats: function() {
+  // 保存学习统计
+  saveStatistics: function() {
     try {
-      const today = new Date().toDateString()
-      const stats = {
-        date: today,
-        ...this.data.todayStats
-      }
+      wx.setStorageSync('statistics', this.data.statistics)
 
-      wx.setStorage({
-        key: 'readingStats',
-        data: stats
-      })
-    } catch (e) {
-      console.log('保存统计数据失败:', e)
+      // 保存今日统计
+      const today = new Date().toDateString()
+      const todayStatsKey = `todayStats_${today}`
+      wx.setStorageSync(todayStatsKey, this.data.todayStats)
+    } catch (error) {
+      console.error('保存统计数据失败:', error)
     }
   },
 
-  // 文本输入变化
-  onTextChange: function(e) {
+  // 输入框内容变化
+  onTextInput: function(e) {
     this.setData({
       inputText: e.detail.value
     })
   },
 
-  // 文本预处理函数 - 移除无效字符，只保留字母和标点
+  // 预处理文本
   preprocessText: function(text) {
-    console.log('预处理输入文本:', text)
-
     if (!text || typeof text !== 'string') {
-      console.log('文本无效')
       return ''
     }
 
-    // 移除多余空白，保留单个空格
-    let cleaned = text.replace(/\s+/g, ' ').trim()
-    console.log('去除多余空格后:', cleaned)
+    // 移除不可见字符和多余空格
+    let cleanText = text
+      .replace(/[\u200B-\u200D\uFEFF]/g, '') // 移除零宽字符
+      .replace(/\s+/g, ' ') // 合并多个空格
+      .trim()
 
-    // 只保留中文、英文、数字、常用标点符号和空格
-    cleaned = cleaned.replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s.,!?;:'"()[\]{}\-]/g, '')
-    console.log('过滤无效字符后:', cleaned)
-
-    // 清理连续标点符号，最多保留两个
-    cleaned = cleaned.replace(/([.,!?;:])\1{2,}/g, '$1$1')
-    console.log('清理连续标点后:', cleaned)
-
-    // 去除首尾标点符号（除了引号）
-    cleaned = cleaned.replace(/^[.,!?;:\-\s]+|[.,!?;:\-\s]+$/g, '')
-    console.log('去除首尾标点后:', cleaned)
-
-    // 最终检查，如果只剩下空格和标点，返回空字符串
-    if (!/[\u4e00-\u9fa5a-zA-Z0-9]/.test(cleaned)) {
-      console.log('没有有效的字符内容')
-      return ''
-    }
-
-    console.log('预处理完成:', cleaned)
-    return cleaned
+    return cleanText
   },
 
   // 处理文本
   processText: function() {
-    const rawText = this.data.inputText.trim()
-    if (!rawText) {
+    const inputText = this.data.inputText.trim()
+
+    if (!inputText) {
       wx.showToast({
         title: '请输入文本',
         icon: 'none'
@@ -178,746 +164,416 @@ Page({
       return
     }
 
-    console.log('开始处理文本:', rawText)
-
-    // 预处理文本
-    const cleanedText = this.preprocessText(rawText)
-    console.log('清理后文本:', cleanedText)
-
-    if (!cleanedText) {
-      wx.showToast({
-        title: '文本内容无效，请检查输入',
-        icon: 'none'
-      })
-      return
-    }
-
-    // 将文本分解为单词和标点符号
-    const processedWords = this.parseTextToWords(cleanedText)
-    console.log('处理后的单词数组:', processedWords)
-    console.log('单词数组长度:', processedWords.length)
-
-    // 确保数据正确设置
     this.setData({
-      processedWords: processedWords
-    }, () => {
-      console.log('页面数据更新完成，processedWords长度:', this.data.processedWords.length)
-      console.log('页面数据:', this.data.processedWords)
+      isProcessing: true
+    })
 
-      // 强制触发页面更新
-      this.$forceUpdate && this.$forceUpdate()
+    wx.showToast({
+      title: '正在处理...',
+      icon: 'loading',
+      duration: 2000
+    })
+
+    try {
+      // 预处理文本
+      const cleanText = this.preprocessText(inputText)
+
+      // 使用改进的分词逻辑
+      const processedWords = this.smartTokenize(cleanText)
+
+      // 更新数据
+      this.setData({
+        processedWords: processedWords,
+        isProcessing: false
+      })
+
+      // 预翻译英文单词
+      this.preTranslateWords(processedWords)
+
+      // 更新统计
+      const wordCount = processedWords.filter(item => item.type === 'word').length
+      this.setData({
+        'statistics.totalWords': this.data.statistics.totalWords + wordCount
+      })
+      this.saveStatistics()
 
       wx.showToast({
-        title: `处理完成，共${processedWords.length}个单词`,
+        title: '处理完成',
         icon: 'success'
       })
-    })
-  },
 
-  // 测试方法：加载示例文本
-  loadExampleText: function() {
-    const exampleText = 'Hello, welcome to our English learning app!'
-    this.setData({
-      inputText: exampleText
-    }, () => {
-      this.processText()
-    })
-  },
-
-  // 解析文本为单词数组 - 简化版
-  parseTextToWords: function(text) {
-    console.log('开始解析文本:', text)
-
-    if (!text || typeof text !== 'string') {
-      console.log('文本无效，返回空数组')
-      return []
+    } catch (error) {
+      console.error('处理文本失败:', error)
+      this.setData({
+        isProcessing: false
+      })
+      wx.showToast({
+        title: '处理失败',
+        icon: 'none'
+      })
     }
+  },
 
-    const words = []
-    let wordIndex = 0
+  // 智能分词
+  smartTokenize: function(text) {
+    const tokens = []
+    let currentIndex = 0
 
-    // 使用简单的正则表达式进行分词
-    const regex = /[\u4e00-\u9fa5]|[a-zA-Z]+|[0-9]+|[.,!?;:'"()[\]{}\-]/g
+    // 正则表达式匹配单词、标点符号和空格
+    const regex = /([a-zA-Z]+(?:'[a-zA-Z]+)*)|([.!?;,:])|(\s+)|([^a-zA-Z\s.!?;,:]+)/g
     let match
 
     while ((match = regex.exec(text)) !== null) {
-      const token = match[0].trim()
+      const fullMatch = match[0]
+      const word = match[1]
+      const punctuation = match[2]
+      const whitespace = match[3]
+      const other = match[4]
 
-      // 跳过空内容
-      if (!token) {
-        continue
+      if (word) {
+        // 英文单词
+        tokens.push({
+          text: word,
+          type: 'word',
+          isWord: true,
+          index: currentIndex++
+        })
+      } else if (punctuation) {
+        // 标点符号
+        tokens.push({
+          text: punctuation,
+          type: 'punctuation',
+          isWord: false,
+          index: currentIndex++
+        })
+      } else if (whitespace) {
+        // 空格
+        tokens.push({
+          text: whitespace,
+          type: 'space',
+          isWord: false,
+          index: currentIndex++
+        })
+      } else if (other) {
+        // 其他字符（数字、中文等）
+        tokens.push({
+          text: other,
+          type: 'other',
+          isWord: false,
+          index: currentIndex++
+        })
       }
-
-      const isWordToken = /[\u4e00-\u9fa5a-zA-Z0-9]/.test(token)
-
-      const wordData = {
-        text: token,
-        index: wordIndex,
-        type: isWordToken ? 'word' : 'punctuation',
-        isSelected: false,
-        isPlaying: false
-      }
-
-      words.push(wordData)
-      wordIndex++
     }
 
-    console.log('解析结果:', words)
-    console.log('解析出的单词数量:', words.length)
-
-    return words
+    return tokens
   },
 
-  // 检查服务状态
-  checkServiceStatus: function() {
-    const status = serviceManager.getServiceStatus()
-    this.setData({
-      serviceStatus: {
-        isLoaded: true,
-        speechAvailable: status.speech
-      }
-    })
+  // 播放单词并显示翻译气泡
+  playWordWithBubble: async function(e) {
+    const dataset = e.currentTarget.dataset
+    const word = dataset.word
+    const index = dataset.index
 
-    if (status.useMock) {
+    if (!word || !/[a-zA-Z]/.test(word)) return
+
+    console.log('播放单词:', word, '索引:', index)
+
+    try {
+      // 同时开始播放语音和显示翻译气泡
+      const playPromise = this.playWord(word)
+      const bubblePromise = this.showTranslationBubbleAt(word, e)
+
+      // 等待两个操作都完成
+      await Promise.all([playPromise, bubblePromise])
+
+    } catch (error) {
+      console.error('播放单词失败:', error)
       wx.showToast({
-        title: '当前使用模拟语音',
-        icon: 'none',
-        duration: 2000
+        title: '播放失败',
+        icon: 'none'
       })
     }
   },
 
   // 播放单词
-  playWord: async function(e) {
-    let wordText, wordIndex;
+  playWord: function(word) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        serviceManager.speak(word, {
+          language: 'en',
+          onComplete: () => {
+            console.log('单词播放完成:', word)
+            resolve()
+          },
+          onError: async (error) => {
+            console.error('单词播放失败:', word, error)
+            reject(error)
+          }
+        })
+      } catch (error) {
+        reject(error)
+      }
+    })
+  },
 
-    if (typeof e === 'string') {
-      // 直接传入文本
-      wordText = e;
-      wordIndex = -1;
-    } else {
-      // 从事件获取
-      wordText = e.currentTarget.dataset.word;
-      wordIndex = e.currentTarget.dataset.index;
+  // 长按开始选择
+  onLongPress: function(e) {
+    console.log('长按事件触发:', e)
+
+    const dataset = e.currentTarget.dataset
+    const wordIndex = parseInt(dataset.index)
+    const word = dataset.text
+
+    if (wordIndex === undefined || !word) {
+      console.log('无效的长按目标')
+      return
     }
 
-    if (!wordText) return;
+    console.log('长按单词:', word, '索引:', wordIndex)
 
-    // 设置当前播放状态
+    // 触发震动反馈
+    wx.vibrateShort()
+
+    // 智能选择整个句子
+    const sentenceRange = this.findSentenceRange(wordIndex)
+
     this.setData({
-      currentPlayingWord: wordText,
-      playProgress: 0,
-      isPlaying: true
-    });
+      isSelectingMode: true,
+      selectionStartIndex: sentenceRange.start,
+      selectionEndIndex: sentenceRange.end,
+      showSelectionMenu: true,
+      selectedText: this.getSelectedText(sentenceRange.start, sentenceRange.end),
+      selectionMenuPosition: this.calculateMenuPosition(e)
+    })
 
-    // 如果有具体的单词索引，高亮显示
-    if (wordIndex >= 0) {
-      const processedWords = this.data.processedWords.map((word, index) => ({
-        ...word,
-        isPlaying: index === wordIndex
-      }));
-      this.setData({
-        processedWords: processedWords
-      });
+    // 高亮选中的文本
+    this.highlightSelection(sentenceRange.start, sentenceRange.end)
+
+    console.log('选择范围:', sentenceRange, '选中文本:', this.data.selectedText)
+  },
+
+  // 查找句子范围
+  findSentenceRange: function(wordIndex) {
+    const words = this.data.processedWords
+    let start = wordIndex
+    let end = wordIndex
+
+    // 向前查找句子开始
+    for (let i = wordIndex - 1; i >= 0; i--) {
+      const word = words[i]
+      if (word.type === 'punctuation' && /[.!?]/.test(word.text)) {
+        start = i + 1
+        break
+      }
+      if (i === 0) {
+        start = 0
+        break
+      }
+    }
+
+    // 向后查找句子结束
+    for (let i = wordIndex + 1; i < words.length; i++) {
+      const word = words[i]
+      if (word.type === 'punctuation' && /[.!?]/.test(word.text)) {
+        end = i
+        break
+      }
+      if (i === words.length - 1) {
+        end = i
+        break
+      }
+    }
+
+    return { start, end }
+  },
+
+  // 获取选中的文本
+  getSelectedText: function(startIndex, endIndex) {
+    const words = this.data.processedWords
+    let selectedText = ''
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      if (words[i]) {
+        selectedText += words[i].text
+      }
+    }
+
+    return selectedText.trim()
+  },
+
+  // 计算菜单位置
+  calculateMenuPosition: function(e) {
+    const systemInfo = wx.getSystemInfoSync()
+    let x = systemInfo.windowWidth / 2
+    let y = 300
+
+    // 尝试从事件获取位置
+    if (e && e.touches && e.touches[0]) {
+      x = e.touches[0].clientX
+      y = e.touches[0].clientY - 100
+    } else if (e && e.changedTouches && e.changedTouches[0]) {
+      x = e.changedTouches[0].clientX
+      y = e.changedTouches[0].clientY - 100
+    }
+
+    // 边界检查
+    const menuWidth = 200
+    const margin = 20
+
+    if (x < menuWidth / 2 + margin) {
+      x = menuWidth / 2 + margin
+    }
+    if (x > systemInfo.windowWidth - menuWidth / 2 - margin) {
+      x = systemInfo.windowWidth - menuWidth / 2 - margin
+    }
+
+    if (y < 100) {
+      y = 100
+    }
+
+    return { x, y }
+  },
+
+  // 高亮选中内容
+  highlightSelection: function(startIndex, endIndex) {
+    const processedWords = this.data.processedWords.map((word, index) => ({
+      ...word,
+      isSelected: index >= startIndex && index <= endIndex
+    }))
+
+    this.setData({
+      processedWords: processedWords
+    })
+  },
+
+  // 播放选中文本
+  playSelectedText: async function() {
+    if (!this.data.selectedText) {
+      wx.showToast({
+        title: '没有选中文本',
+        icon: 'none'
+      })
+      return
     }
 
     try {
-      // 使用serviceManager进行语音播放
-      await serviceManager.speak(wordText.trim(), 'en');
+      // 提取英文单词
+      const words = this.data.selectedText.match(/[a-zA-Z]+/g) || []
 
-      console.log('单词播放完成:', wordText);
-      this.updateReadingStats('word');
+      if (words.length === 0) {
+        wx.showToast({
+          title: '没有找到英文单词',
+          icon: 'none'
+        })
+        return
+      }
+
+      wx.showToast({
+        title: '正在播放...',
+        icon: 'loading'
+      })
+
+      // 逐个播放单词
+      for (const word of words) {
+        await this.playWord(word)
+        await this.delay(300)
+      }
 
       wx.showToast({
         title: '播放完成',
-        icon: 'success',
-        duration: 800
-      });
+        icon: 'success'
+      })
+
     } catch (error) {
-      console.error('播放失败:', error);
+      console.error('播放选中文本失败:', error)
       wx.showToast({
         title: '播放失败',
         icon: 'none'
-      });
-    } finally {
-      this.clearPlayingState();
+      })
     }
+  },
+
+  // 翻译选中文本
+  translateSelectedText: async function() {
+    if (!this.data.selectedText) {
+      wx.showToast({
+        title: '没有选中文本',
+        icon: 'none'
+      })
+      return
+    }
+
+    try {
+      // 提取英文单词并获取翻译
+      const words = this.data.selectedText.match(/[a-zA-Z]+/g) || []
+      const translations = []
+
+      for (const word of words) {
+        const translation = await this.getTranslation(word)
+        translations.push(`${word}: ${translation}`)
+      }
+
+      // 显示翻译结果
+      const translationText = translations.join('\n')
+
+      wx.showModal({
+        title: '翻译结果',
+        content: translationText,
+        showCancel: false,
+        confirmText: '确定'
+      })
+
+    } catch (error) {
+      console.error('翻译失败:', error)
+      wx.showToast({
+        title: '翻译失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  // 取消选择
+  cancelSelection: function() {
+    this.clearSelection()
+  },
+
+  // 清除选择状态
+  clearSelection: function() {
+    // 清除高亮
+    const processedWords = this.data.processedWords.map(word => ({
+      ...word,
+      isSelected: false
+    }))
+
+    this.setData({
+      processedWords: processedWords,
+      isSelectingMode: false,
+      selectionStartIndex: -1,
+      selectionEndIndex: -1,
+      showSelectionMenu: false,
+      selectedText: '',
+      selectionMenuPosition: { x: 0, y: 0 }
+    })
   },
 
   // 清除播放状态
   clearPlayingState: function() {
     this.setData({
-      isPlaying: false,
       isPlayingAll: false,
       playingSequence: false,
-      currentPlayingWord: '',
-      playProgress: 0
-    });
+      currentPlayingIndex: -1,
+      currentPlayingWord: ''
+    })
 
-    // 清除单词高亮
+    // 清除高亮
     const processedWords = this.data.processedWords.map(word => ({
       ...word,
       isPlaying: false
-    }));
-    this.setData({
-      processedWords: processedWords
-    });
-
-    // 停止播放控制器
-    if (this.data.sequenceController) {
-      this.data.sequenceController.stop = true;
-      this.setData({
-        sequenceController: null
-      });
-    }
-  },
-
-  // 显示单词详情
-  showWordDetail: function(word) {
-    // 模拟词典数据
-    const wordDetail = this.getWordDetail(word)
-
-    this.setData({
-      selectedWordDetail: wordDetail,
-      showWordModal: true
-    })
-  },
-
-  // 获取单词详情
-  getWordDetail: function(word) {
-    const dictionary = {
-      'hello': {
-        word: 'hello',
-        phonetic: '/həˈloʊ/',
-        meaning: 'n. 招呼，问候；v. 打招呼，问好'
-      },
-      'welcome': {
-        word: 'welcome',
-        phonetic: '/ˈwelkəm/',
-        meaning: 'v. 欢迎；adj. 受欢迎的；n. 欢迎'
-      },
-      'quick': {
-        word: 'quick',
-        phonetic: '/kwɪk/',
-        meaning: 'adj. 快的，迅速的；adv. 快速地'
-      },
-      'brown': {
-        word: 'brown',
-        phonetic: '/braʊn/',
-        meaning: 'adj. 棕色的；n. 棕色'
-      },
-      'education': {
-        word: 'education',
-        phonetic: '/ˌedʒuˈkeɪʃn/',
-        meaning: 'n. 教育，培养'
-      }
-    }
-
-    return dictionary[word.toLowerCase()] || {
-      word: word,
-      phonetic: '/' + word + '/',
-      meaning: '暂无释义'
-    }
-  },
-
-  // 关闭单词详情
-  closeWordModal: function() {
-    this.setData({
-      showWordModal: false
-    })
-  },
-
-  // 朗读详情单词
-  speakDetailWord: async function() {
-    const word = this.data.selectedWordDetail.word
-    try {
-      await serviceManager.textToSpeech(word)
-
-      wx.showToast({
-        title: '播放完成',
-        icon: 'success',
-        duration: 1000
-      })
-    } catch (error) {
-      console.error('播放详情单词失败:', error)
-      wx.showToast({
-        title: '播放失败',
-        icon: 'error'
-      })
-    }
-  },
-
-  // 添加到收藏
-  addToFavorites: function() {
-    const word = this.data.selectedWordDetail.word
-    let favorites = [...this.data.favoriteWords]
-
-    if (!favorites.includes(word)) {
-      favorites.push(word)
-      this.setData({
-        favoriteWords: favorites
-      })
-
-      wx.setStorage({
-        key: 'favoriteWords',
-        data: favorites
-      })
-
-      wx.showToast({
-        title: '已添加到收藏',
-        icon: 'success'
-      })
-    } else {
-      wx.showToast({
-        title: '已在收藏夹中',
-        icon: 'none'
-      })
-    }
-
-    this.closeWordModal()
-  },
-
-  // 重复当前单词
-  repeatWord: async function() {
-    if (this.data.currentWord) {
-      try {
-        await this.playWord(this.data.currentWord)
-      } catch (error) {
-        console.error('重复播放失败:', error)
-        wx.showToast({
-          title: '播放失败',
-          icon: 'none'
-        })
-      }
-    }
-  },
-
-  // 慢速播放
-  slowDown: function() {
-    this.setData({
-      'voiceSettings.speed': 0.7
-    })
-    this.saveVoiceSettings()
-    wx.showToast({
-      title: '已切换到慢速',
-      icon: 'none'
-    })
-  },
-
-  // 正常速度
-  normalSpeed: function() {
-    this.setData({
-      'voiceSettings.speed': 1.0
-    })
-    this.saveVoiceSettings()
-    wx.showToast({
-      title: '已切换到正常速度',
-      icon: 'none'
-    })
-  },
-
-  // 语音设置变化
-  onSpeedChange: function(e) {
-    this.setData({
-      'voiceSettings.speed': e.detail.value
-    })
-    this.saveVoiceSettings()
-  },
-
-  onVolumeChange: function(e) {
-    this.setData({
-      'voiceSettings.volume': e.detail.value
-    })
-    this.saveVoiceSettings()
-  },
-
-  onPitchChange: function(e) {
-    this.setData({
-      'voiceSettings.pitch': e.detail.value
-    })
-    this.saveVoiceSettings()
-  },
-
-  // 保存语音设置
-  saveVoiceSettings: function() {
-    wx.setStorage({
-      key: 'voiceSettings',
-      data: this.data.voiceSettings
-    })
-  },
-
-  // 更新朗读统计
-  updateReadingStats: function(type) {
-    const stats = {...this.data.todayStats}
-
-    if (type === 'word') {
-      stats.wordsRead += 1
-    } else if (type === 'sentence') {
-      stats.sentencesRead += 1
-    }
-
-    stats.timeSpent += 0.1 // 每次朗读增加0.1分钟
-
-    this.setData({
-      todayStats: stats
-    })
-
-    this.saveStats()
-  },
-
-  // 加载示例文本
-  loadExample: function(e) {
-    const text = e.currentTarget.dataset.text
-    this.setData({
-      inputText: text
-    })
-    this.processText()
-  },
-
-  // 清空文本
-  clearText: function() {
-    this.setData({
-      inputText: '',
-      processedWords: [],
-      currentWord: ''
-    })
-  },
-
-  // 粘贴文本
-  pasteText: function() {
-    wx.getClipboardData({
-      success: (res) => {
-        this.setData({
-          inputText: res.data
-        })
-      },
-      fail: () => {
-        wx.showToast({
-          title: '粘贴失败',
-          icon: 'none'
-        })
-      }
-    })
-  },
-
-  // 朗读收藏单词
-  speakFavorite: function(e) {
-    const word = e.currentTarget.dataset.word
-    this.playWord(word)
-  },
-
-  // 删除收藏单词
-  removeFavorite: function(e) {
-    const word = e.currentTarget.dataset.word
-    const favorites = this.data.favoriteWords.filter(item => item !== word)
-
-    this.setData({
-      favoriteWords: favorites
-    })
-
-    wx.setStorage({
-      key: 'favoriteWords',
-      data: favorites
-    })
-
-    wx.showToast({
-      title: '已取消收藏',
-      icon: 'success'
-    })
-  },
-
-  // 清空收藏
-  clearFavorites: function() {
-    wx.showModal({
-      title: '确认清空',
-      content: '确定要清空所有收藏的单词吗？',
-      success: (res) => {
-        if (res.confirm) {
-          this.setData({
-            favoriteWords: []
-          })
-
-          wx.removeStorage({
-            key: 'favoriteWords'
-          })
-
-          wx.showToast({
-            title: '已清空收藏',
-            icon: 'success'
-          })
-        }
-      }
-    })
-  },
-
-  // 录音功能
-  startRecording: function() {
-    wx.showModal({
-      title: '录音功能',
-      content: '开始录音，说出英文单词或句子',
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            wx.showToast({
-              title: '录音中...',
-              icon: 'loading',
-              duration: 3000
-            })
-
-            // 使用语音识别服务
-            const recognizedText = await serviceManager.speechToText(3000) // 录音3秒
-
-            this.setData({
-              inputText: recognizedText
-            })
-
-            wx.showToast({
-              title: '识别成功',
-              icon: 'success'
-            })
-
-            // 自动处理识别的文本
-            this.processText()
-
-          } catch (error) {
-            console.error('语音识别失败:', error)
-            wx.showToast({
-              title: '识别失败，请重试',
-              icon: 'none'
-            })
-          }
-        }
-      }
-    })
-  },
-
-  // 分享功能
-  onShareAppMessage: function () {
-    return {
-      title: '七七喵点读机 - 智能英语点读助手',
-      path: '/pages/reading/reading',
-      imageUrl: '/images/share.png'
-    }
-  },
-
-  // 单词点击事件 - 重新实现双击选择逻辑
-  onWordTap: function(e) {
-    const wordIndex = parseInt(e.currentTarget.dataset.index);
-    const wordText = e.currentTarget.dataset.word;
-
-    if (!this.data.isSelectingMode) {
-      // 第一次点击：开始选择模式，设置起点
-      this.setData({
-        isSelectingMode: true,
-        selectionStartIndex: wordIndex,
-        selectionEndIndex: -1,
-        selectedText: '',
-        showSelectionMenu: false
-      });
-
-      // 高亮起始单词
-      this.updateWordSelection(wordIndex, wordIndex);
-
-      wx.showToast({
-        title: '已选择起点，请点击终点',
-        icon: 'none',
-        duration: 1500
-      });
-    } else {
-      // 第二次点击：设置终点，完成选择
-      const startIndex = this.data.selectionStartIndex;
-      const endIndex = wordIndex;
-
-      // 确定选择范围
-      const minIndex = Math.min(startIndex, endIndex);
-      const maxIndex = Math.max(startIndex, endIndex);
-
-      // 获取选中的文本
-      const selectedWords = this.data.processedWords.slice(minIndex, maxIndex + 1);
-      const selectedText = selectedWords.map(word => word.text).join(' ');
-
-      // 更新选择状态
-      this.setData({
-        selectionEndIndex: endIndex,
-        selectedText: selectedText,
-        showSelectionMenu: true,
-        menuPosition: {
-          x: 100, // 固定位置，避免位置计算问题
-          y: 150
-        }
-      });
-
-      // 高亮选中的所有单词
-      this.updateWordSelection(minIndex, maxIndex);
-
-      wx.showToast({
-        title: `已选中 ${maxIndex - minIndex + 1} 个单词`,
-        icon: 'success',
-        duration: 1000
-      });
-    }
-  },
-
-  // 退出选择模式
-  exitSelectionMode: function() {
-    this.setData({
-      isSelectingMode: false,
-      selectionStartIndex: -1,
-      selectionEndIndex: -1,
-      selectedText: '',
-      showSelectionMenu: false
-    });
-    this.clearWordSelection();
-  },
-
-  // 隐藏选择菜单
-  hideSelectionMenu: function() {
-    this.exitSelectionMode();
-  },
-
-  // 朗读选中的文本
-  speakSelectedText: function() {
-    if (!this.data.selectedText) {
-      wx.showToast({
-        title: '请先选择文本',
-        icon: 'none'
-      });
-      return;
-    }
-
-    try {
-      // 检查语音服务状态
-      if (!serviceManager) {
-        wx.showToast({
-          title: '语音服务未初始化',
-          icon: 'none'
-        });
-        return;
-      }
-
-      // 开始播放前设置状态
-      this.setData({
-        isPlaying: true,
-        currentPlayingWord: this.data.selectedText
-      });
-
-      wx.showToast({
-        title: '开始朗读选中文本',
-        icon: 'success',
-        duration: 1000
-      });
-
-      // 调用语音服务播放选中文本
-      serviceManager.speak(this.data.selectedText, {
-        onComplete: () => {
-          console.log('选中文本朗读完成');
-          this.setData({
-            isPlaying: false,
-            currentPlayingWord: ''
-          });
-        },
-        onError: (error) => {
-          console.error('选中文本朗读失败:', error);
-          this.setData({
-            isPlaying: false,
-            currentPlayingWord: ''
-          });
-          wx.showToast({
-            title: '朗读失败',
-            icon: 'none'
-          });
-        }
-      });
-
-    } catch (error) {
-      console.error('朗读选中文本失败:', error);
-      this.setData({
-        isPlaying: false,
-        currentPlayingWord: ''
-      });
-      wx.showToast({
-        title: '朗读失败',
-        icon: 'none'
-      });
-    }
-  },
-
-  // 更新单词选中状态
-  updateWordSelection(startIndex, endIndex) {
-    if (!this.data.processedWords) return;
-
-    const processedWords = this.data.processedWords.map((word, index) => {
-      const isSelected = index >= startIndex && index <= endIndex;
-      return {
-        ...word,
-        isSelected: isSelected
-      };
-    });
+    }))
 
     this.setData({
       processedWords: processedWords
-    });
-  },
-
-  // 清除单词选中状态
-  clearWordSelection() {
-    if (!this.data.processedWords) return;
-
-    const processedWords = this.data.processedWords.map(word => ({
-      ...word,
-      isSelected: false
-    }));
-
-    this.setData({
-      processedWords: processedWords,
-      selectedText: '',
-      showSelectionMenu: false
-    });
-  },
-
-  // 复制选中的文本到剪贴板
-  copySelectedText: function() {
-    if (!this.data.selectedText) {
-      wx.showToast({
-        title: '请先选择文本',
-        icon: 'none'
-      });
-      return;
-    }
-
-    wx.setClipboardData({
-      data: this.data.selectedText,
-      success: () => {
-        wx.showToast({
-          title: '已复制到剪贴板',
-          icon: 'success'
-        });
-        this.exitSelectionMode();
-      },
-      fail: () => {
-        wx.showToast({
-          title: '复制失败',
-          icon: 'none'
-        });
-      }
-    });
-  },
-
-  // 翻译选中的文本
-  translateSelectedText: function() {
-    if (!this.data.selectedText) {
-      wx.showToast({
-        title: '请先选择文本',
-        icon: 'none'
-      });
-      return;
-    }
-
-    wx.navigateTo({
-      url: `/pages/translate/translate?text=${encodeURIComponent(this.data.selectedText)}`
-    });
-
-    this.exitSelectionMode();
+    })
   },
 
   // 更新播放状态
@@ -925,28 +581,34 @@ Page({
     const processedWords = this.data.processedWords.map((word, index) => ({
       ...word,
       isPlaying: index === wordIndex
-    }));
+    }))
 
     this.setData({
       processedWords: processedWords,
       currentPlayingWord: this.data.processedWords[wordIndex]?.text || ''
-    });
+    })
   },
 
-  // 停止朗读功能
+  // 停止播放
   stopReading: function() {
-    console.log('停止朗读被调用')
+    this.setData({
+      isPlayingAll: false,
+      isPlaying: false,
+      currentPlayingIndex: -1
+    })
 
-    try {
-      serviceManager.stop()
-    } catch (error) {
-      console.error('停止语音服务失败:', error)
-    }
+    // 清除所有高亮
+    const processedWords = this.data.processedWords.map(word => ({
+      ...word,
+      isPlaying: false
+    }))
 
-    this.clearPlayingState()
+    this.setData({
+      processedWords: processedWords
+    })
 
     wx.showToast({
-      title: '已停止朗读',
+      title: '已停止播放',
       icon: 'success',
       duration: 1000
     })
@@ -980,5 +642,542 @@ Page({
         icon: 'none'
       })
     }
+  },
+
+  // 显示翻译气泡
+  showTranslationBubbleAt: async function(word, e) {
+    if (!word || !/[a-zA-Z]/.test(word)) return
+
+    console.log('显示翻译气泡，单词:', word, '事件对象:', e)
+
+    try {
+      // 获取翻译
+      const translation = await this.getTranslation(word)
+
+      console.log('获取到翻译:', word, '->', translation)
+
+      // 计算气泡位置 - 改进位置计算逻辑
+      const systemInfo = wx.getSystemInfoSync()
+      let x, y
+
+      // 尝试从不同的事件属性获取位置信息
+      if (e && e.detail && e.detail.x !== undefined) {
+        // 从detail中获取位置（某些组件事件）
+        x = e.detail.x
+        y = e.detail.y - 100
+      } else if (e && e.touches && e.touches[0]) {
+        // 从touches获取位置（触摸事件）
+        x = e.touches[0].clientX
+        y = e.touches[0].clientY - 100
+      } else if (e && e.changedTouches && e.changedTouches[0]) {
+        // 从changedTouches获取位置（触摸结束事件）
+        x = e.changedTouches[0].clientX
+        y = e.changedTouches[0].clientY - 100
+      } else if (e && e.currentTarget) {
+        // 尝试从currentTarget获取位置信息
+        const query = wx.createSelectorQuery()
+        query.select('#' + e.currentTarget.id).boundingClientRect()
+        query.exec((res) => {
+          if (res[0]) {
+            x = res[0].left + res[0].width / 2
+            y = res[0].top - 50
+          }
+        })
+      } else {
+        // 默认位置：屏幕中央偏上
+        x = systemInfo.windowWidth / 2
+        y = 200
+      }
+
+      // 边界检查和调整
+      const bubbleWidth = 240
+      const bubbleHeight = 100
+      const margin = 20
+
+      // 水平边界检查
+      if (x < bubbleWidth / 2 + margin) {
+        x = bubbleWidth / 2 + margin
+      }
+      if (x > systemInfo.windowWidth - bubbleWidth / 2 - margin) {
+        x = systemInfo.windowWidth - bubbleWidth / 2 - margin
+      }
+
+      // 垂直边界检查
+      if (y < bubbleHeight + margin) {
+        y = bubbleHeight + margin
+      }
+      if (y > systemInfo.windowHeight - bubbleHeight - margin) {
+        y = systemInfo.windowHeight - bubbleHeight - margin
+      }
+
+      console.log('计算的气泡位置:', { x, y, screenWidth: systemInfo.windowWidth, screenHeight: systemInfo.windowHeight })
+
+      // 显示翻译气泡
+      this.setData({
+        showTranslationBubble: true,
+        bubbleContent: {
+          word: word,
+          translation: translation || '翻译获取中...',
+          position: { x: x, y: y }
+        }
+      })
+
+      console.log('设置气泡内容完成:', this.data.bubbleContent)
+
+      // 3秒后自动隐藏
+      setTimeout(() => {
+        this.hideTranslationBubble()
+      }, 3000)
+
+    } catch (error) {
+      console.error('获取翻译失败:', error)
+
+      // 即使翻译失败也显示气泡，使用默认位置
+      const systemInfo = wx.getSystemInfoSync()
+      const x = systemInfo.windowWidth / 2
+      const y = 200
+
+      this.setData({
+        showTranslationBubble: true,
+        bubbleContent: {
+          word: word,
+          translation: '翻译获取失败，请稍后重试',
+          position: { x: x, y: y }
+        }
+      })
+
+      setTimeout(() => {
+        this.hideTranslationBubble()
+      }, 3000)
+    }
+  },
+
+  // 预翻译英文单词
+  preTranslateWords: function(words) {
+    if (!words || !Array.isArray(words)) return
+
+    // 提取所有英文单词
+    const englishWords = words
+      .filter(item => item.isWord && /^[a-zA-Z]+$/.test(item.text))
+      .map(item => item.text.toLowerCase())
+
+    // 去重
+    const uniqueWords = [...new Set(englishWords)]
+
+    console.log('开始预翻译单词:', uniqueWords)
+
+    // 为每个单词预加载翻译
+    uniqueWords.forEach(word => {
+      this.getTranslation(word).then(translation => {
+        console.log(`预翻译完成: ${word} -> ${translation}`)
+      }).catch(error => {
+        console.error(`预翻译失败: ${word}`, error)
+      })
+    })
+  },
+
+  // 获取单词翻译
+  getWordTranslation: function(word) {
+    const lowerWord = word.toLowerCase()
+
+    // 优先使用预翻译缓存
+    if (this.data.translationCache[lowerWord]) {
+      return Promise.resolve(this.data.translationCache[lowerWord])
+    }
+
+    // 如果缓存中没有，使用内置词典
+    return this.getTranslation(word)
+  },
+
+  // 隐藏翻译气泡
+  hideTranslationBubble: function() {
+    this.setData({
+      showTranslationBubble: false,
+      bubbleContent: {
+        word: '',
+        translation: '',
+        position: { x: 0, y: 0 }
+      }
+    })
+  },
+
+  // 关闭翻译气泡
+  onBubbleClose: function() {
+    this.hideTranslationBubble()
+  },
+
+  // 高亮正在播放的内容
+  highlightPlayingContent: function(wordIndex) {
+    if (wordIndex < 0 || !this.data.processedWords) return
+
+    const processedWords = this.data.processedWords.map((word, index) => ({
+      ...word,
+      isPlaying: index === wordIndex
+    }))
+
+    this.setData({
+      processedWords: processedWords
+    })
+  },
+
+  // 获取翻译
+  getTranslation: function(word) {
+    const lowerWord = word.toLowerCase()
+
+    // 检查缓存
+    if (this.data.translationCache[lowerWord]) {
+      return Promise.resolve(this.data.translationCache[lowerWord])
+    }
+
+    // 扩展的内置词典
+    const builtInDict = {
+      // 基础词汇
+      'hello': '你好', 'world': '世界', 'good': '好的', 'morning': '早上',
+      'afternoon': '下午', 'evening': '晚上', 'night': '夜晚', 'thank': '谢谢',
+      'you': '你', 'welcome': '欢迎', 'please': '请', 'sorry': '对不起',
+      'excuse': '打扰', 'me': '我', 'yes': '是', 'no': '不', 'ok': '好的',
+      'fine': '很好', 'great': '很棒', 'wonderful': '精彩', 'beautiful': '美丽',
+
+      // 动词
+      'love': '爱', 'like': '喜欢', 'want': '想要', 'need': '需要', 'have': '有',
+      'get': '得到', 'go': '去', 'come': '来', 'see': '看', 'look': '看',
+      'listen': '听', 'speak': '说', 'talk': '谈话', 'read': '读', 'write': '写',
+      'learn': '学习', 'study': '学习', 'work': '工作', 'play': '玩', 'eat': '吃',
+      'drink': '喝', 'sleep': '睡觉', 'walk': '走', 'run': '跑', 'stop': '停止',
+      'start': '开始', 'end': '结束', 'open': '打开', 'close': '关闭',
+      'make': '制作', 'take': '拿', 'give': '给', 'put': '放', 'find': '找到',
+      'know': '知道', 'think': '思考', 'feel': '感觉', 'try': '尝试', 'help': '帮助',
+
+      // 形容词
+      'big': '大', 'small': '小', 'long': '长', 'short': '短', 'high': '高',
+      'low': '低', 'fast': '快', 'slow': '慢', 'hot': '热', 'cold': '冷',
+      'new': '新', 'old': '旧', 'young': '年轻', 'happy': '快乐', 'sad': '悲伤',
+      'angry': '生气', 'tired': '累', 'hungry': '饿', 'thirsty': '渴', 'busy': '忙',
+      'free': '自由', 'easy': '容易', 'difficult': '困难', 'hard': '困难',
+      'important': '重要', 'interesting': '有趣', 'boring': '无聊', 'funny': '有趣',
+      'serious': '严肃', 'quiet': '安静', 'loud': '大声', 'clean': '干净',
+      'dirty': '脏', 'rich': '富有', 'poor': '贫穷', 'smart': '聪明',
+      'strong': '强壮', 'weak': '虚弱', 'healthy': '健康', 'sick': '生病',
+      'safe': '安全', 'dangerous': '危险',
+
+      // 代词和连词
+      'the': '这个', 'a': '一个', 'an': '一个', 'and': '和', 'or': '或者',
+      'but': '但是', 'if': '如果', 'when': '当', 'where': '哪里', 'what': '什么',
+      'who': '谁', 'how': '如何', 'why': '为什么', 'this': '这个', 'that': '那个',
+      'these': '这些', 'those': '那些', 'here': '这里', 'there': '那里',
+      'now': '现在', 'then': '然后', 'today': '今天', 'tomorrow': '明天',
+      'yesterday': '昨天', 'my': '我的', 'your': '你的', 'his': '他的',
+      'her': '她的', 'its': '它的', 'our': '我们的', 'their': '他们的',
+
+      // 应用相关词汇
+      'app': '应用', 'english': '英语', 'learning': '学习', 'quick': '快速',
+      'brown': '棕色', 'fox': '狐狸', 'jumps': '跳跃', 'over': '越过',
+      'lazy': '懒惰', 'dog': '狗', 'education': '教育', 'most': '最',
+      'powerful': '强大', 'weapon': '武器', 'which': '哪个', 'can': '能够',
+      'use': '使用', 'to': '到', 'change': '改变', 'life': '生活',
+      'happens': '发生', 'making': '制作', 'other': '其他', 'plans': '计划',
+      'only': '只有', 'way': '方式', 'do': '做', 'is': '是', 'in': '在',
+      'middle': '中间', 'of': '的', 'difficulty': '困难', 'lies': '位于',
+      'opportunity': '机会', 'time': '时间', 'people': '人们', 'man': '男人',
+      'woman': '女人', 'child': '孩子', 'family': '家庭', 'friend': '朋友',
+      'house': '房子', 'school': '学校', 'book': '书', 'car': '汽车',
+      'food': '食物', 'water': '水', 'money': '钱', 'job': '工作',
+      'place': '地方', 'country': '国家', 'city': '城市', 'year': '年',
+      'day': '天', 'week': '周', 'month': '月', 'hour': '小时',
+      'minute': '分钟', 'second': '秒', 'first': '第一', 'last': '最后',
+      'next': '下一个', 'before': '之前', 'after': '之后', 'always': '总是',
+      'never': '从不', 'sometimes': '有时', 'often': '经常', 'usually': '通常'
+    }
+
+    // 获取翻译，如果词典中没有则返回更友好的提示
+    let translation = builtInDict[lowerWord]
+
+    if (!translation) {
+      // 对于未知单词，提供更有用的信息
+      if (/^[a-zA-Z]+$/.test(word)) {
+        translation = `[${word}]`  // 用方括号包围未知的英文单词
+      } else {
+        translation = word  // 非英文内容直接返回原文
+      }
+    }
+
+    // 将翻译结果添加到缓存
+    this.setData({
+      [`translationCache.${lowerWord}`]: translation
+    })
+
+    return Promise.resolve(translation)
+  },
+
+  // 全文播放功能
+  playAll: async function() {
+    if (this.data.processedWords.length === 0) {
+      wx.showToast({
+        title: '请先处理文本',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (this.data.isPlayingAll) {
+      wx.showToast({
+        title: '正在播放中',
+        icon: 'none'
+      })
+      return
+    }
+
+    console.log('开始全文播放')
+
+    // 设置全文播放状态
+    this.setData({
+      isPlayingAll: true,
+      playingSequence: true,
+      currentPlayingIndex: 0
+    })
+
+    try {
+      // 获取所有英文单词
+      const englishWords = this.data.processedWords
+        .filter(item => item.type === 'word' && /^[a-zA-Z]+$/.test(item.text))
+        .map(item => item.text)
+
+      if (englishWords.length === 0) {
+        wx.showToast({
+          title: '没有找到英文单词',
+          icon: 'none'
+        })
+        this.clearPlayingState()
+        return
+      }
+
+      // 逐个播放单词
+      for (let i = 0; i < englishWords.length; i++) {
+        // 检查是否被停止
+        if (!this.data.isPlayingAll) {
+          console.log('播放被停止')
+          break
+        }
+
+        const word = englishWords[i]
+        console.log(`播放第 ${i + 1} 个单词:`, word)
+
+        // 更新当前播放状态
+        this.setData({
+          currentPlayingIndex: i,
+          currentPlayingWord: word
+        })
+
+        try {
+          // 播放单词（不使用缓存，直接播放）
+          await this.playWordDirect(word)
+
+          // 播放间隔
+          await this.delay(500)
+
+        } catch (error) {
+          console.error(`播放第 ${i + 1} 段失败:`, error)
+        }
+      }
+
+      console.log('全文播放完成')
+      wx.showToast({
+        title: '全文播放完成',
+        icon: 'success'
+      })
+
+    } catch (error) {
+      console.error('全文播放失败:', error)
+      wx.showToast({
+        title: '播放失败',
+        icon: 'none'
+      })
+    } finally {
+      this.clearPlayingState()
+    }
+  },
+
+  // 直接播放单词（不缓存）
+  playWordDirect: function(word) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        serviceManager.speak(word, {
+          language: 'en',
+          onComplete: () => {
+            console.log('单词播放完成:', word)
+            resolve()
+          },
+          onError: async (error) => {
+            console.error('单词播放失败:', word, error)
+            reject(error)
+          }
+        })
+      } catch (error) {
+        reject(error)
+      }
+    })
+  },
+
+  // 延迟函数
+  delay: function(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  },
+
+  // 查看存储状态
+  checkStorageStatus: function() {
+    try {
+      const storageInfo = wx.getStorageInfoSync()
+      const usagePercent = Math.round(storageInfo.currentSize / storageInfo.limitSize * 100)
+
+      wx.showModal({
+        title: '存储状态',
+        content: `存储项目：${storageInfo.keys.length} 个\n当前大小：${Math.round(storageInfo.currentSize)} KB\n存储限制：${Math.round(storageInfo.limitSize)} KB\n使用率：${usagePercent}%\n\n${usagePercent > 80 ? '⚠️ 存储空间不足，建议清理' : '✅ 存储空间充足'}`,
+        showCancel: false,
+        confirmText: '确定'
+      })
+    } catch (error) {
+      console.error('获取存储状态失败:', error)
+      wx.showToast({
+        title: '获取状态失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  // 单词点击事件
+  onWordTap: async function(e) {
+    const dataset = e.currentTarget.dataset
+    const word = dataset.word
+    const index = dataset.index
+
+    if (!word || !/[a-zA-Z]/.test(word)) return
+
+    console.log('点击单词:', word, '索引:', index)
+
+    try {
+      // 播放语音并显示翻译气泡
+      await this.playWordWithBubble(e)
+
+      // 更新学习统计
+      this.setData({
+        'statistics.studiedWords': this.data.statistics.studiedWords + 1,
+        'todayStats.wordsRead': this.data.todayStats.wordsRead + 1
+      })
+      this.saveStatistics()
+
+    } catch (error) {
+      console.error('播放单词失败:', error)
+      wx.showToast({
+        title: '播放失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  // 清空收藏
+  clearFavorites: function() {
+    wx.showModal({
+      title: '确认清空',
+      content: '确定要清空所有收藏的单词吗？',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({
+            favoriteWords: []
+          })
+          wx.setStorageSync('favoriteWords', [])
+          wx.showToast({
+            title: '已清空收藏',
+            icon: 'success'
+          })
+        }
+      }
+    })
+  },
+
+  // 播放收藏的单词
+  speakFavorite: async function(e) {
+    const word = e.currentTarget.dataset.word
+    if (!word) return
+
+    try {
+      await this.playWord(word)
+    } catch (error) {
+      console.error('播放收藏单词失败:', error)
+      wx.showToast({
+        title: '播放失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  // 移除收藏
+  removeFavorite: function(e) {
+    const word = e.currentTarget.dataset.word
+    if (!word) return
+
+    const favoriteWords = this.data.favoriteWords.filter(item => item !== word)
+    this.setData({
+      favoriteWords: favoriteWords
+    })
+    wx.setStorageSync('favoriteWords', favoriteWords)
+
+    wx.showToast({
+      title: '已移除收藏',
+      icon: 'success'
+    })
+  },
+
+  // 关闭单词详情模态框
+  closeWordModal: function() {
+    this.setData({
+      showWordModal: false,
+      selectedWordDetail: {
+        word: '',
+        phonetic: '',
+        meaning: ''
+      }
+    })
+  },
+
+  // 播放详情单词
+  speakDetailWord: async function() {
+    const word = this.data.selectedWordDetail.word
+    if (!word) return
+
+    try {
+      await this.playWord(word)
+    } catch (error) {
+      console.error('播放详情单词失败:', error)
+      wx.showToast({
+        title: '播放失败',
+        icon: 'none'
+      })
+    }
+  },
+
+  // 添加到收藏
+  addToFavorites: function() {
+    const word = this.data.selectedWordDetail.word
+    if (!word) return
+
+    const favoriteWords = this.data.favoriteWords
+    if (favoriteWords.includes(word)) {
+      wx.showToast({
+        title: '已在收藏中',
+        icon: 'none'
+      })
+      return
+    }
+
+    favoriteWords.push(word)
+    this.setData({
+      favoriteWords: favoriteWords
+    })
+    wx.setStorageSync('favoriteWords', favoriteWords)
+
+    wx.showToast({
+      title: '已添加收藏',
+      icon: 'success'
+    })
   }
 })

@@ -246,67 +246,37 @@ class BaiduSpeechService {
    * @returns {Promise<void>}
    */
   async playSingleSegment(text, options = {}) {
-    const result = await this.textToSpeech(text, options)
+    try {
+      // 获取音频的base64数据
+      const audioResult = await this.textToSpeech(text, options);
+      const audioBase64 = audioResult.audioData;
 
-    // 创建临时文件路径
-    const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_audio_${Date.now()}.mp3`
+      // 直接使用base64播放，不写入文件
+      const innerAudioContext = wx.createInnerAudioContext();
+      innerAudioContext.src = `data:audio/mp3;base64,${audioBase64}`;
 
-    // 将base64音频数据写入临时文件
-    const buffer = wx.base64ToArrayBuffer(result.audioData)
+      return new Promise((resolve, reject) => {
+        innerAudioContext.onPlay(() => {
+          console.log('开始播放:', text);
+        });
 
-    await new Promise((resolve, reject) => {
-      wx.getFileSystemManager().writeFile({
-        filePath: tempFilePath,
-        data: buffer,
-        success: resolve,
-        fail: reject
-      })
-    })
+        innerAudioContext.onEnded(() => {
+          innerAudioContext.destroy();
+          resolve();
+        });
 
-    // 播放音频
-    return new Promise((resolve, reject) => {
-      // 停止之前的播放
-      if (this.currentAudioContext) {
-        this.currentAudioContext.stop()
-        this.currentAudioContext.destroy()
-      }
+        innerAudioContext.onError((error) => {
+          innerAudioContext.destroy();
+          reject(error);
+        });
 
-      const audioContext = wx.createInnerAudioContext()
-      this.currentAudioContext = audioContext
+        innerAudioContext.play();
+      });
 
-      audioContext.src = tempFilePath
-
-      audioContext.onPlay(() => {
-        console.log('开始播放语音片段:', text.substring(0, 30) + '...')
-      })
-
-      audioContext.onEnded(() => {
-        console.log('语音片段播放完成')
-        audioContext.destroy()
-        if (this.currentAudioContext === audioContext) {
-          this.currentAudioContext = null
-        }
-
-        // 清理临时文件
-        wx.getFileSystemManager().unlink({
-          filePath: tempFilePath,
-          success: () => console.log('清理临时文件成功'),
-          fail: (err) => console.log('清理临时文件失败:', err)
-        })
-        resolve()
-      })
-
-      audioContext.onError((err) => {
-        console.error('语音播放失败:', err)
-        audioContext.destroy()
-        if (this.currentAudioContext === audioContext) {
-          this.currentAudioContext = null
-        }
-        reject(err)
-      })
-
-      audioContext.play()
-    })
+    } catch (error) {
+      console.error('播放失败:', error);
+      throw error;
+    }
   }
 
   /**
@@ -348,6 +318,13 @@ class BaiduSpeechService {
           }
         } catch (segmentError) {
           console.error(`播放第 ${i + 1} 段失败:`, segmentError)
+
+          // 如果有错误回调，调用它
+          if (options.onError) {
+            options.onError(segmentError)
+            return
+          }
+
           // 如果某段播放失败，继续播放下一段
           if (i < segments.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 1000))
@@ -358,10 +335,21 @@ class BaiduSpeechService {
       this.isPlayingSequence = false
       console.log('全文播放完成')
 
+      // 如果有完成回调，调用它
+      if (options.onComplete) {
+        options.onComplete()
+      }
+
     } catch (error) {
       this.isPlayingSequence = false
       console.error('播放长文本失败:', error)
-      throw error
+
+      // 如果有错误回调，调用它
+      if (options.onError) {
+        options.onError(error)
+      } else {
+        throw error
+      }
     }
   }
 
